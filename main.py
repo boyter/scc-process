@@ -8,24 +8,26 @@ import string
 import boto3
 
 def process(site):
-    pid = str(multiprocessing.current_process().pid)
-    filename, _ = process_path(site)
-    print('processing', site, pid, filename)
-    
-    os.chdir('/tmp')
-    os.system('rm -rf /tmp/scc-tmp-path-' + pid)
-    os.system('git clone --depth=1 ' + site + ' scc-tmp-path-' + pid)
-    os.system('scc -f json -o /tmp/' + filename + ' scc-tmp-path-' + pid)
-    
+    try:
+        pid = str(multiprocessing.current_process().pid)
+        filename, _ = process_path(site)
+        print('processing', site, pid, filename)
+        
+        os.chdir('/tmp')
+        os.system('rm -rf /tmp/scc-tmp-path-' + pid)
+        os.system('git clone --depth=1 ' + site + ' scc-tmp-path-' + pid)
+        os.system('scc -f json -o /tmp/' + filename + ' scc-tmp-path-' + pid)
+        
 
-    s3 = boto3.client('s3')
-    with open('/tmp/' + filename, 'rb') as f:
-        s3.upload_fileobj(f, 'sloccloccode', filename)
+        s3 = boto3.client('s3')
+        with open('/tmp/' + filename, 'rb') as f:
+            s3.upload_fileobj(f, 'sloccloccode', filename)
 
-    print('cleaning up', site, pid, filename)
-    os.system('rm /tmp/' + filename)
-    os.system('rm -rf /tmp/scc-tmp-path-' + pid)
-
+        print('cleaning up', site, pid, filename)
+        os.system('rm /tmp/' + filename)
+        os.system('rm -rf /tmp/scc-tmp-path-' + pid)
+    except:
+        pass
 
 def process_path(path):
     path = re.sub('', '', path, flags=re.MULTILINE )
