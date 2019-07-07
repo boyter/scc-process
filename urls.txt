@@ -1,0 +1,3 @@
+http://github.com/Papervision3D/Papervision3D
+https://bitbucket.org/burnsjeremy/gitlabhq
+https://gitlab.com/0007/gitb13
