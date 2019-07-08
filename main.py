@@ -6,28 +6,33 @@ import os
 import re
 import string
 import boto3
+import subprocess
 
 def process(site):
-    try:
-        pid = str(multiprocessing.current_process().pid)
-        filename, _ = process_path(site)
-        print('processing', site, pid, filename)
-        
+    pid = str(multiprocessing.current_process().pid)
+    filename, _ = process_path(site)
+    print('processing', site, pid, filename)
+
+    
+
+    try:    
         os.chdir('/tmp')
         os.system('rm -rf /tmp/scc-tmp-path-' + pid)
-        os.system('git clone --depth=1 ' + site + ' scc-tmp-path-' + pid)
-        os.system('scc -f json -o /tmp/' + filename + ' scc-tmp-path-' + pid)
+        p = subprocess.Popen(['git', 'clone', '--depth=1', site, '/tmp/scc-tmp-path-' + pid])
+        p.wait(60)        
+        # os.system('git clone --depth=1 ' + site + ' scc-tmp-path-' + pid)
+        os.system('scc -f json -o /tmp/' + filename + ' /tmp/scc-tmp-path-' + pid)
         
-
         s3 = boto3.client('s3')
         with open('/tmp/' + filename, 'rb') as f:
             s3.upload_fileobj(f, 'sloccloccode', filename)
-
-        print('cleaning up', site, pid, filename)
-        os.system('rm /tmp/' + filename)
-        os.system('rm -rf /tmp/scc-tmp-path-' + pid)
     except:
-        pass
+        p.kill()
+
+    print('cleaning up', site, pid, filename)
+    os.system('rm /tmp/' + filename)
+    os.system('rm -rf /tmp/scc-tmp-path-' + pid)
+
 
 def process_path(path):
     path = re.sub('', '', path, flags=re.MULTILINE )
@@ -79,7 +84,7 @@ if __name__ == '__main__':
             line += '.git'
 
             # we already processed the first 2 million or so
-            if count > 2000000:
+            if count > 0:
                 sites.append(line)
 
     p = Pool(processes=32)
