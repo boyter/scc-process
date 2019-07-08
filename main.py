@@ -1,4 +1,3 @@
-import requests
 from multiprocessing import Pool
 import multiprocessing
 import hashlib
@@ -12,15 +11,13 @@ def process(site):
     pid = str(multiprocessing.current_process().pid)
     filename, _ = process_path(site)
     print('processing', site, pid, filename)
-
-    
+    p = None
 
     try:    
         os.chdir('/tmp')
         os.system('rm -rf /tmp/scc-tmp-path-' + pid)
         p = subprocess.Popen(['git', 'clone', '--depth=1', site, '/tmp/scc-tmp-path-' + pid])
         p.wait(60)        
-        # os.system('git clone --depth=1 ' + site + ' scc-tmp-path-' + pid)
         os.system('scc -f json -o /tmp/' + filename + ' /tmp/scc-tmp-path-' + pid)
         
         s3 = boto3.client('s3')
@@ -84,9 +81,9 @@ if __name__ == '__main__':
             line += '.git'
 
             # we already processed the first 2 million or so
-            if count > 0:
+            if count > 2000000:
                 sites.append(line)
 
-    p = Pool(processes=32)
+    p = Pool(processes=16)
     p.map(process, sites)
     sites = []
